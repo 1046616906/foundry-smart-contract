@@ -1,0 +1,15 @@
+{
+  // 指定为 Foundry 模式
+  "solidity.packageDefaultDependenciesDirectory": "lib",
+  "solidity.packageDefaultDependenciesContractsDirectory": "src",
+  // 让编辑器知道去哪里找依赖
+  "solidity.remappings": [
+    "@chainlink/contracts/=lib/chainlink-brownie-contracts/contracts/",
+    "forge-std/=lib/forge-std/src/",
+    "@solmate/=lib/solmate/src/"
+  ],
+  // 解决 Cursor 在 WSL 中可能出现的路径识别延迟
+  "solidity.detectMissingReMap": true,
+  // 如果你发现还是跳不动，强制指定编译器版本（与 foundry.toml 一致）
+  "solidity.compileUsingRemoteVersion": "v0.8.20"
+}
