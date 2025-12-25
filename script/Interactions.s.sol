@@ -7,7 +7,7 @@ import {
     VRFCoordinatorV2_5Mock
 } from "../lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 import {LinkToken} from "test/mocks/LinkToken.sol";
-import {DevopsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
+import {DevOpsTools} from "lib/foundry-devops/src/DevOpsTools.sol";
 contract CreateSubscription is Script {
     function createSubscriptionUsingConfig() public {
         HelperConfig helperConfig = new HelperConfig();
@@ -69,8 +69,8 @@ contract FundSubscription is Script, ChainIdConfig {
 }
 
     contract AddConsumer is Script {
-        function run() {
-            address mostRecentlyDeploy = DevopsTools.get_most_recent_deployment(
+        function run() public {
+            address mostRecentlyDeploy = DevOpsTools.get_most_recent_deployment(
                 "Raffle",
                 block.chainid
             );

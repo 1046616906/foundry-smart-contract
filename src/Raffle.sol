@@ -91,11 +91,12 @@ contract Raffle is VRFConsumerBaseV2Plus {
                     VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
                 )
             });
-        uint256 requestId = s_vrfCoordinator.requestRandomWords(result);
+        // uint256 requestId = 
+        s_vrfCoordinator.requestRandomWords(result);
     }
 
     function fulfillRandomWords(
-        uint256 _requestId,
+        uint256 /*_requestId*/,
         uint256[] calldata _randomWords
     ) internal override {
         uint256 randomNum = _randomWords[0] % s_players.length; // 获取余数
