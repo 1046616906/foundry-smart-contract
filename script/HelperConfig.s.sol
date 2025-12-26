@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
-import {Script} from "../lib/forge-std/src/Script.sol";
+import {Script} from "lib/forge-std/src/Script.sol";
 import {
     VRFCoordinatorV2_5Mock
-} from "../lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
+} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 import {LinkToken} from "test/mocks/LinkToken.sol";
 
 abstract contract ChainIdConfig {
@@ -24,7 +24,7 @@ contract HelperConfig is ChainIdConfig, Script {
         address link;
     }
     mapping(uint256 => NetworkConfig) config;
-
+    NetworkConfig public anvilConfig;
     constructor() {
         config[SEPOLIA_CHAIN_ID] = getSepoliaConfig();
     }
@@ -59,6 +59,9 @@ contract HelperConfig is ChainIdConfig, Script {
     }
 
     function getAnvilConfig() public returns (NetworkConfig memory) {
+        if (anvilConfig.vrfCoordinator != address(0)) {
+            return anvilConfig;
+        }
         uint96 baseFee = 0.25 ether;
         uint96 gasPrice = 1e9;
         int256 wei_per_unit_link = -5e15;
@@ -70,15 +73,15 @@ contract HelperConfig is ChainIdConfig, Script {
             );
         LinkToken linkToken = new LinkToken();
         vm.stopBroadcast();
-        return
-            NetworkConfig({
-                entranceFee: 0.01 ether,
-                keyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
-                callbackGasLimit: 500000,
-                vrfCoordinator: address(vrfCoordinatorV2_5Mock),
-                subId: 0,
-                interval: 30,
-                link: address(linkToken)
-            });
+        anvilConfig = NetworkConfig({
+            entranceFee: 0.01 ether,
+            keyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
+            callbackGasLimit: 500000,
+            vrfCoordinator: address(vrfCoordinatorV2_5Mock),
+            subId: 0,
+            interval: 30,
+            link: address(linkToken)
+        });
+        return anvilConfig;
     }
 }

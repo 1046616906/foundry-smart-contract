@@ -3,10 +3,10 @@ pragma solidity ^0.8.19;
 
 import {
     VRFConsumerBaseV2Plus
-} from "../lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
 import {
     VRFV2PlusClient
-} from "../lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
 contract Raffle is VRFConsumerBaseV2Plus {
     /* Error */
@@ -16,7 +16,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle_NotUpkeepNeeded(
         uint256 currentBalance,
         uint256 numPlayers,
-        RaffleStatus raffleState
+        RaffleState raffleState
     );
     /**status */
     uint32 constant NUMBER_WORD = 1;
@@ -30,15 +30,16 @@ contract Raffle is VRFConsumerBaseV2Plus {
     address payable[] public s_players;
     address public winner; // 获胜者
 
-    RaffleStatus public raffleStatus = RaffleStatus.OPEN;
-    enum RaffleStatus {
+    RaffleState public raffleState = RaffleState.OPEN;
+    enum RaffleState {
         OPEN,
         CALCULATING
     }
 
     /* 事件 */
     event EnterRaffle(address indexed player, uint256 amount);
-
+    event RequestedRaffleWinner(uint256 indexed requestId);
+    event WinnerPinked();
     constructor(
         uint256 entranceFee,
         bytes32 keyHash,
@@ -57,7 +58,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     function enterRaffle() public payable {
         if (msg.value < i_entranceFee) revert Raffle_NotEnoughETH();
-        if (raffleStatus != RaffleStatus.OPEN) revert Raffle_CALCULATING();
+        if (raffleState != RaffleState.OPEN) revert Raffle_CALCULATING();
         s_players.push(payable(msg.sender));
         emit EnterRaffle(msg.sender, msg.value);
     }
@@ -66,12 +67,12 @@ contract Raffle is VRFConsumerBaseV2Plus {
     ) public view returns (bool upkeepNeeded, bytes memory /* performData */) {
         bool hasTime = block.timestamp - s_lastTime >= i_interval;
         bool hasPlayers = s_players.length > 0;
-        bool raffleStatusIsOpen = (raffleStatus == RaffleStatus.OPEN);
+        bool raffleStateIsOpen = (raffleState == RaffleState.OPEN);
         bool hasEnoughETH = address(this).balance >= 0;
         upkeepNeeded =
             hasTime &&
             hasPlayers &&
-            raffleStatusIsOpen &&
+            raffleStateIsOpen &&
             hasEnoughETH;
         return (upkeepNeeded, "");
     }
@@ -82,9 +83,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
             revert Raffle_NotUpkeepNeeded(
                 address(this).balance,
                 s_players.length,
-                raffleStatus
+                raffleState
             );
-        raffleStatus = RaffleStatus.CALCULATING;
+        raffleState = RaffleState.CALCULATING;
         VRFV2PlusClient.RandomWordsRequest memory result = VRFV2PlusClient
             .RandomWordsRequest({
                 keyHash: i_keyHash,
@@ -96,8 +97,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
                     VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
                 )
             });
-        // uint256 requestId =
-        s_vrfCoordinator.requestRandomWords(result);
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(result);
+        emit RequestedRaffleWinner(requestId);
     }
 
     function fulfillRandomWords(
@@ -106,8 +107,11 @@ contract Raffle is VRFConsumerBaseV2Plus {
     ) internal override {
         uint256 randomNum = _randomWords[0] % s_players.length; // 获取余数
         winner = s_players[randomNum];
-        raffleStatus = RaffleStatus.OPEN;
+        raffleState = RaffleState.OPEN;
+        s_players = new address payable[](0);
         s_lastTime = block.timestamp;
+        emit WinnerPinked();
+
         (bool success, ) = winner.call{value: address(this).balance}("");
         if (!success) revert Raffle_TransferFailed();
     }
