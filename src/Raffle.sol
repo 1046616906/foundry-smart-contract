@@ -13,7 +13,11 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle_NotEnoughETH();
     error Raffle_CALCULATING();
     error Raffle_TransferFailed();
-    error Raffle_NotUpkeepNeeded();
+    error Raffle_NotUpkeepNeeded(
+        uint256 currentBalance,
+        uint256 numPlayers,
+        RaffleStatus raffleState
+    );
     /**status */
     uint32 constant NUMBER_WORD = 1;
     uint16 constant REQUEST_CONFIRMATIONS = 3;
@@ -59,11 +63,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
     function checkUpkeep(
         bytes memory /* checkData */
-    )
-        public
-        view
-        returns (bool upkeepNeeded, bytes memory /* performData */)
-    {
+    ) public view returns (bool upkeepNeeded, bytes memory /* performData */) {
         bool hasTime = block.timestamp - s_lastTime >= i_interval;
         bool hasPlayers = s_players.length > 0;
         bool raffleStatusIsOpen = (raffleStatus == RaffleStatus.OPEN);
@@ -77,8 +77,13 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     function performUpkeep() public {
-        (bool upkeepNeeded,) = checkUpkeep("");
-        if (!upkeepNeeded) revert Raffle_NotUpkeepNeeded();
+        (bool upkeepNeeded, ) = checkUpkeep("");
+        if (!upkeepNeeded)
+            revert Raffle_NotUpkeepNeeded(
+                address(this).balance,
+                s_players.length,
+                raffleStatus
+            );
         raffleStatus = RaffleStatus.CALCULATING;
         VRFV2PlusClient.RandomWordsRequest memory result = VRFV2PlusClient
             .RandomWordsRequest({
@@ -91,7 +96,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
                     VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
                 )
             });
-        // uint256 requestId = 
+        // uint256 requestId =
         s_vrfCoordinator.requestRandomWords(result);
     }
 
