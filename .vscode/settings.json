@@ -11,5 +11,5 @@
   // 解决 Cursor 在 WSL 中可能出现的路径识别延迟
   "solidity.detectMissingReMap": true,
   // 如果你发现还是跳不动，强制指定编译器版本（与 foundry.toml 一致）
-  "solidity.compileUsingRemoteVersion": "v0.8.20"
+  "solidity.compileUsingRemoteVersion": "v0.8.19"
 }

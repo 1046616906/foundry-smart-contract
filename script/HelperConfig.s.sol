@@ -22,9 +22,11 @@ contract HelperConfig is ChainIdConfig, Script {
         uint256 subId;
         uint256 interval;
         address link;
+        address account;
     }
     mapping(uint256 => NetworkConfig) config;
-    NetworkConfig public anvilConfig;
+    NetworkConfig public localConfig;
+
     constructor() {
         config[SEPOLIA_CHAIN_ID] = getSepoliaConfig();
     }
@@ -54,13 +56,14 @@ contract HelperConfig is ChainIdConfig, Script {
                 vrfCoordinator: 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B,
                 subId: 108676595255390158925884288886226485914029300675292554031389501149004825938295,
                 interval: 30,
-                link: 0x779877A7B0D9E8603169DdbD7836e478b4624789
+                link: 0x779877A7B0D9E8603169DdbD7836e478b4624789,
+                account: 0xDb2869B1E6C8F795aAE6fB040EaAC49016dD52A9
             });
     }
 
     function getAnvilConfig() public returns (NetworkConfig memory) {
-        if (anvilConfig.vrfCoordinator != address(0)) {
-            return anvilConfig;
+        if (localConfig.vrfCoordinator != address(0)) {
+            return localConfig;
         }
         uint96 baseFee = 0.25 ether;
         uint96 gasPrice = 1e9;
@@ -73,15 +76,16 @@ contract HelperConfig is ChainIdConfig, Script {
             );
         LinkToken linkToken = new LinkToken();
         vm.stopBroadcast();
-        anvilConfig = NetworkConfig({
+        localConfig = NetworkConfig({
             entranceFee: 0.01 ether,
             keyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
             callbackGasLimit: 500000,
             vrfCoordinator: address(vrfCoordinatorV2_5Mock),
             subId: 0,
             interval: 30,
-            link: address(linkToken)
+            link: address(linkToken),
+            account: 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38
         });
-        return anvilConfig;
+        return localConfig;
     }
 }

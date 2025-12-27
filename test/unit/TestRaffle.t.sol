@@ -3,13 +3,13 @@ pragma solidity ^0.8.19;
 
 import {Test, console} from "lib/forge-std/src/Test.sol";
 import {Raffle} from "src/Raffle.sol";
-import {HelperConfig} from "script/HelperConfig.s.sol";
+import {HelperConfig, ChainIdConfig} from "script/HelperConfig.s.sol";
 import {DeployRaffle} from "script/DeployRaffle.s.sol";
 import {Vm} from "lib/forge-std/src/Vm.sol";
 import {
     VRFCoordinatorV2_5Mock
 } from "lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
-contract TestRaffle is Test {
+contract TestRaffle is Test,ChainIdConfig {
     Raffle raffle;
     HelperConfig helperConfig;
 
@@ -137,9 +137,14 @@ contract TestRaffle is Test {
         _;
     }
 
+    modifier skipTest() {
+        if (block.chainid == ChainIdConfig.SEPOLIA_CHAIN_ID) return;
+        _;
+    }
+
     function test_PerformUpkeep_UpdatesRaffleStateAndEmitsRequestId()
         public
-        raffleEntered
+        raffleEntered skipTest
     {
         vm.recordLogs();
         raffle.performUpkeep();
@@ -163,7 +168,7 @@ contract TestRaffle is Test {
 
     function test_FulfillRandomWords_PicksAWinnerResetsAndSendsMoney()
         public
-        raffleEntered
+        raffleEntered skipTest
     {
         // 1. Arrange
         uint16 additionalEntrants = 3;
@@ -185,7 +190,6 @@ contract TestRaffle is Test {
         raffle.performUpkeep();
         Vm.Log[] memory entries = vm.getRecordedLogs();
         bytes32 requestId = entries[1].topics[1];
-        console.log(uint256(requestId));
         VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(
             uint256(requestId),
             address(raffle)
